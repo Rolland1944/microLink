@@ -1,34 +1,70 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
-             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-             xmlns:flowable="http://flowable.org/bpmn"
-             typeLanguage="http://www.w3.org/2001/XMLSchema"
-             expressionLanguage="http://www.w3.org/1999/XPath"
-             targetNamespace="http://www.flowable.org/processdef">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:flowable="http://flowable.org/bpmn" id="Definitions_1o0x8yv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.2.0">
+    <bpmn:process id="hotContentPushProcess" name="Hot Content Push Process" isExecutable="true">
+        <bpmn:startEvent id="startEvent" name="Start Push">
+            <bpmn:outgoing>flowToFetchContent</bpmn:outgoing>
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="flowToFetchContent" sourceRef="startEvent" targetRef="fetchContentTask" />
+        <bpmn:serviceTask id="fetchContentTask" name="Fetch Published Content" flowable:delegateExpression="${fetchPublishedContentDelegate}">
+            <bpmn:incoming>flowToFetchContent</bpmn:incoming>
+            <bpmn:outgoing>flowToFetchStats</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="flowToFetchStats" sourceRef="fetchContentTask" targetRef="fetchStatsTask" />
+        <bpmn:serviceTask id="fetchStatsTask" name="Fetch Content Statistics" flowable:delegateExpression="${fetchContentStatisticsDelegate}">
+            <bpmn:incoming>flowToFetchStats</bpmn:incoming>
+            <bpmn:outgoing>flowToRank</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="flowToRank" sourceRef="fetchStatsTask" targetRef="rankContentTask" />
+        <bpmn:serviceTask id="rankContentTask" name="Rank and Select Top 10" flowable:delegateExpression="${rankAndSelectTopContentDelegate}">
+            <bpmn:incoming>flowToRank</bpmn:incoming>
+            <bpmn:outgoing>flowToEnd</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:endEvent id="endEvent" name="End Push">
+            <bpmn:incoming>flowToEnd</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:sequenceFlow id="flowToEnd" sourceRef="rankContentTask" targetRef="endEvent" />
+    </bpmn:process>
+    <!-- VISUAL DIAGRAM INFORMATION STARTS HERE -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="hotContentPushProcess">
+            <bpmndi:BPMNEdge id="Flow_04k0o93_di" bpmnElement="flowToEnd">
+                <di:waypoint x="800" y="117" />
+                <di:waypoint x="852" y="117" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_11j6j7w_di" bpmnElement="flowToRank">
+                <di:waypoint x="640" y="117" />
+                <di:waypoint x="700" y="117" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_13l7q2s_di" bpmnElement="flowToFetchStats">
+                <di:waypoint x="480" y="117" />
+                <di:waypoint x="540" y="117" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1mwxq85_di" bpmnElement="flowToFetchContent">
+                <di:waypoint x="218" y="117" />
+                <di:waypoint x="380" y="117" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="Event_0i1d3j1_di" bpmnElement="startEvent">
+                <dc:Bounds x="182" y="99" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="175" y="142" width="51" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_07v89w5_di" bpmnElement="fetchContentTask">
+                <dc:Bounds x="380" y="77" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_12dmdn3_di" bpmnElement="fetchStatsTask">
+                <dc:Bounds x="540" y="77" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_077l4tq_di" bpmnElement="rankContentTask">
+                <dc:Bounds x="700" y="77" width="100" height="80" />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_1l2x98j_di" bpmnElement="endEvent">
+                <dc:Bounds x="852" y="99" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="848" y="142" width="45" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>
 
-    <process id="hotContentPushProcess" name="Hot Content Push Process" isExecutable="true">
-
-        <startEvent id="startEvent" name="Start Push"/>
-
-        <sequenceFlow id="flowToFetchContent" sourceRef="startEvent" targetRef="fetchContentTask"/>
-
-        <serviceTask id="fetchContentTask" name="Fetch Published Content"
-                     flowable:delegateExpression="${fetchPublishedContentDelegate}"/>
-
-        <sequenceFlow id="flowToFetchStats" sourceRef="fetchContentTask" targetRef="fetchStatsTask"/>
-
-        <serviceTask id="fetchStatsTask" name="Fetch Content Statistics"
-                     flowable:delegateExpression="${fetchContentStatisticsDelegate}"/>
-
-        <sequenceFlow id="flowToRank" sourceRef="fetchStatsTask" targetRef="rankContentTask"/>
-
-        <serviceTask id="rankContentTask" name="Rank and Select Top 10"
-                     flowable:delegateExpression="${rankAndSelectTopContentDelegate}"/>
-
-        <sequenceFlow id="flowToEnd" sourceRef="rankContentTask" targetRef="endEvent"/>
-
-        <endEvent id="endEvent" name="End Push"/>
-
-    </process>
-</definitions>

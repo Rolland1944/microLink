@@ -15,7 +15,7 @@
     <description>Statistics Service for Microlink</description>
     <properties>
         <java.version>21</java.version>
-        <skipTests>true</skipTests>
+<!--        <skipTests>true</skipTests>-->
     </properties>
     <dependencies>
         <!-- Spring Boot Starter for building web, including RESTful, applications using Spring MVC -->

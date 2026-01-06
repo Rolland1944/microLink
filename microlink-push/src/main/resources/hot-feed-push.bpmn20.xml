@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:flowable="http://flowable.org/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0z1k9a6" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.2.0">
+    <bpmn:process id="hotFeedPushProcess" name="Hot Feed Push Process" isExecutable="true">
+        <bpmn:documentation />
+        <bpmn:startEvent id="startTimerEvent" name="Start Push Cycle">
+            <bpmn:outgoing>flowToGetHotFeed</bpmn:outgoing>
+            <bpmn:timerEventDefinition id="TimerEventDefinition_0w9x1k5">
+                <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">0 0 * * * ?</bpmn:timeCycle>
+            </bpmn:timerEventDefinition>
+        </bpmn:startEvent>
+        <bpmn:sequenceFlow id="flowToGetHotFeed" sourceRef="startTimerEvent" targetRef="getHotFeedTask" />
+        <bpmn:serviceTask id="getHotFeedTask" name="Get Hot Feed Ranking Result" flowable:class="com.microlink.push.logic.GetHotFeedDelegate">
+            <bpmn:documentation>Calls the PushService to get the latest ranked content list and stores it in the 'rankedContent' process variable.</bpmn:documentation>
+            <bpmn:incoming>flowToGetHotFeed</bpmn:incoming>
+            <bpmn:outgoing>flowToContentCheck</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="flowToContentCheck" sourceRef="getHotFeedTask" targetRef="contentCheckGateway" />
+        <bpmn:exclusiveGateway id="contentCheckGateway" name="Content Available?">
+            <bpmn:incoming>flowToContentCheck</bpmn:incoming>
+            <bpmn:outgoing>flowToPushContent</bpmn:outgoing>
+            <bpmn:outgoing>flowToEndNoContent</bpmn:outgoing>
+        </bpmn:exclusiveGateway>
+        <bpmn:sequenceFlow id="flowToPushContent" name="Yes" sourceRef="contentCheckGateway" targetRef="pushContentTask">
+            <bpmn:documentation>Path taken if the 'rankedContent' list is not empty.</bpmn:documentation>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${!rankedContent.isEmpty()}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:sequenceFlow id="flowToEndNoContent" name="No" sourceRef="contentCheckGateway" targetRef="endEventNoContent">
+            <bpmn:documentation>Path taken if the 'rankedContent' list is empty.</bpmn:documentation>
+            <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${rankedContent.isEmpty()}</bpmn:conditionExpression>
+        </bpmn:sequenceFlow>
+        <bpmn:serviceTask id="pushContentTask" name="Push Content to Users" flowable:class="com.microlink.push.logic.PushContentDelegate">
+            <bpmn:documentation>Executes the main push logic using the content from the 'rankedContent' variable.</bpmn:documentation>
+            <bpmn:incoming>flowToPushContent</bpmn:incoming>
+            <bpmn:outgoing>flowToEndSuccess</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="flowToEndSuccess" sourceRef="pushContentTask" targetRef="endEventSuccess" />
+        <bpmn:serviceTask id="logPushFailureTask" name="Log Push Failure" flowable:class="com.microlink.push.logic.LogPushFailureDelegate">
+            <bpmn:documentation>Logs the exception and any relevant details if the push task fails.</bpmn:documentation>
+            <bpmn:incoming>flowToErrorHandling</bpmn:incoming>
+            <bpmn:outgoing>flowFromErrorToEnd</bpmn:outgoing>
+        </bpmn:serviceTask>
+        <bpmn:sequenceFlow id="flowFromErrorToEnd" sourceRef="logPushFailureTask" targetRef="endEventError" />
+        <bpmn:endEvent id="endEventSuccess" name="Push Successful">
+            <bpmn:incoming>flowToEndSuccess</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="endEventNoContent" name="End (No Content)">
+            <bpmn:incoming>flowToEndNoContent</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:endEvent id="endEventError" name="End (Push Failed)">
+            <bpmn:incoming>flowFromErrorToEnd</bpmn:incoming>
+        </bpmn:endEvent>
+        <bpmn:boundaryEvent id="pushErrorBoundary" attachedToRef="pushContentTask">
+            <bpmn:outgoing>flowToErrorHandling</bpmn:outgoing>
+            <bpmn:errorEventDefinition id="ErrorEventDefinition_1c1g2x1" />
+        </bpmn:boundaryEvent>
+        <bpmn:sequenceFlow id="flowToErrorHandling" sourceRef="pushErrorBoundary" targetRef="logPushFailureTask" />
+    </bpmn:process>
+    <!-- VISUAL DIAGRAM INFORMATION STARTS HERE -->
+    <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="hotFeedPushProcess">
+            <bpmndi:BPMNEdge id="Flow_04z83b5_di" bpmnElement="flowToErrorHandling">
+                <di:waypoint x="680" y="278" />
+                <di:waypoint x="680" y="320" />
+                <di:waypoint x="770" y="320" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_08w7rky_di" bpmnElement="flowFromErrorToEnd">
+                <di:waypoint x="870" y="320" />
+                <di:waypoint x="942" y="320" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_08r0y38_di" bpmnElement="flowToEndSuccess">
+                <di:waypoint x="720" y="240" />
+                <di:waypoint x="942" y="240" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1u3i2kj_di" bpmnElement="flowToEndNoContent">
+                <di:waypoint x="505" y="145" />
+                <di:waypoint x="960" y="145" />
+                <di:waypoint x="960" y="108" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="726" y="127" width="15" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_00o6z7k_di" bpmnElement="flowToPushContent">
+                <di:waypoint x="480" y="170" />
+                <di:waypoint x="480" y="240" />
+                <di:waypoint x="620" y="240" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="543" y="222" width="18" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_0e2417i_di" bpmnElement="flowToContentCheck">
+                <di:waypoint x="380" y="145" />
+                <di:waypoint x="455" y="145" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNEdge id="Flow_1vun93m_di" bpmnElement="flowToGetHotFeed">
+                <di:waypoint x="218" y="145" />
+                <di:waypoint x="280" y="145" />
+            </bpmndi:BPMNEdge>
+            <bpmndi:BPMNShape id="Event_0f2l8p7_di" bpmnElement="startTimerEvent">
+                <dc:Bounds x="182" y="127" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="163" y="170" width="75" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_0m401kp_di" bpmnElement="getHotFeedTask">
+                <dc:Bounds x="280" y="105" width="100" height="80" />
+                <bpmndi:BPMNLabel />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Gateway_140f80q_di" bpmnElement="contentCheckGateway" isMarkerVisible="true">
+                <dc:Bounds x="455" y="120" width="50" height="50" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="447" y="83" width="67" height="27" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_18y8pvl_di" bpmnElement="pushContentTask">
+                <dc:Bounds x="620" y="200" width="100" height="80" />
+                <bpmndi:BPMNLabel />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Activity_1g7k7k7_di" bpmnElement="logPushFailureTask">
+                <dc:Bounds x="770" y="280" width="100" height="80" />
+                <bpmndi:BPMNLabel />
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_1r1n5sw_di" bpmnElement="endEventSuccess">
+                <dc:Bounds x="942" y="222" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="918" y="265" width="84" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_1w3j4o2_di" bpmnElement="endEventNoContent">
+                <dc:Bounds x="942" y="72" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="918" y="115" width="85" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_036o430_di" bpmnElement="endEventError">
+                <dc:Bounds x="942" y="302" width="36" height="36" />
+                <bpmndi:BPMNLabel>
+                    <dc:Bounds x="916" y="345" width="88" height="14" />
+                </bpmndi:BPMNLabel>
+            </bpmndi:BPMNShape>
+            <bpmndi:BPMNShape id="Event_0l56v8j_di" bpmnElement="pushErrorBoundary">
+                <dc:Bounds x="662" y="262" width="36" height="36" />
+            </bpmndi:BPMNShape>
+        </bpmndi:BPMNPlane>
+    </bpmndi:BPMNDiagram>
+</bpmn:definitions>
